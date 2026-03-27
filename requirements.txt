@@ -1,0 +1,4 @@
+streamlit
+pandas
+numpy
+# 如果你用了其他库，比如 openai、requests 也加进来
