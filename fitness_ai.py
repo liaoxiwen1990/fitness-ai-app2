@@ -3,7 +3,7 @@ import requests
 import os
 
 # ==================== 配置 ====================
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "566deedb4e5f416a9b9b4a943c6145e2.LlT9DuYr53VhSAUr")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "0014e00356a746668dc44b10f3ef8102.QhgDIgIbMASeCQOw")
 ANTHROPIC_BASE_URL = os.environ.get("ANTHROPIC_BASE_URL", "https://api.z.ai/api/anthropic")
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "glm-4.7")
 
@@ -34,6 +34,45 @@ st.markdown("""
         border-radius: 10px;
         margin: 10px 0;
         border-left: 5px solid #667eea;
+    }
+    .main-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: gray;
+        font-size: 0.8em;
+        padding: 15px 0;
+        background: white;
+        border-top: 1px solid #eee;
+        z-index: 999;
+    }
+    /* 为内容区域添加底部内边距，避免被页脚遮挡 */
+    .main .block-container {
+        padding-bottom: 70px;
+    }
+    /* 调整聊天输入框位置，避免与页脚重叠 */
+    .stChatInput {
+        padding-bottom: 70px;
+    }
+    /* 隐藏聊天消息上方的横线 */
+    .stChatMessage {
+        border-top: none !important;
+    }
+    /* 隐藏聊天输入框上方的横线 */
+    [data-testid="stChatInput"] hr {
+        display: none !important;
+    }
+    .st-emotion-cache-1s8qyds hr {
+        display: none !important;
+    }
+    [data-testid="stChatInput"] + hr {
+        display: none !important;
+    }
+    .stChatInput hr,
+    .stChatInputContainer hr {
+        display: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -140,12 +179,7 @@ def call_claude_api(messages):
     except requests.exceptions.ConnectionError:
         return "网络连接失败，请检查您的网络设置。"
     except requests.exceptions.HTTPError as e:
-        if response.status_code == 401:
-            return "API密钥无效，请检查配置。"
-        elif response.status_code == 429:
-            return "请求过于频繁，请稍后再试。"
-        else:
-            return f"API请求失败 (HTTP {response.status_code}): {str(e)}"
+        return f"API请求失败 (HTTP {response.status_code}): {str(e)}"
     except Exception as e:
         return f"发生未知错误: {str(e)}"
 
@@ -317,61 +351,113 @@ elif st.session_state.page == "plan":
 
 # ========== 页面3: 咨询教练 ==========
 elif st.session_state.page == "chat":
-    st.markdown('<div class="main-header">', unsafe_allow_html=True)
-    st.title("💪 AI健身助手")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # 顶部工具栏
+    col1, col2, col3 = st.columns([6, 2, 2])
+    with col1:
+        st.markdown('<div class="main-header"><h2 style="margin:0;">💪 AI健身助手</h2></div>', unsafe_allow_html=True)
+    with col2:
+        if st.button("🗑️ 清空对话", use_container_width=True):
+            st.session_state.messages = []
+            st.rerun()
+    with col3:
+        if st.button("🔄 新对话", use_container_width=True):
+            st.session_state.messages = []
+            st.rerun()
 
-    # 用户输入
-    user_input = st.text_input("您好，我是您的专属AI健身助手，有什么可以帮助您的？", key="chat_input")
+    # 用户信息卡片
+    if st.session_state.user_info:
+        info = st.session_state.user_info
+        with st.container():
+            st.markdown("""
+            <style>
+                .user-info-bar {
+                    background: #f8f9fa;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    margin: 10px 0 20px 0;
+                    border-left: 4px solid #667eea;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="user-info-bar">
+                <strong>👤 {info['gender']}</strong> |
+                <strong>{info['age']}岁</strong> |
+                <strong>{info['weight']}kg</strong> |
+                <strong>BMI {info['bmi']}</strong> |
+                <strong>🎯 {info['goal']}</strong>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # 提交按钮
-    submit = st.button("发送", key="send_button")
+    # 欢迎消息
+    if not st.session_state.messages:
+        st.markdown("""
+        <div style='text-align: center; padding: 20px;'>
+            <h3>👋 欢迎来到 AI 健身助手</h3>
+            <p style='color: #666;'>我是您的专业健身教练，可以帮您：</p>
+            <div style='display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 15px 0;'>
+                <span style='background: #e3f2fd; padding: 8px 16px; border-radius: 20px; color: #1976d2;'>📋 制定训练计划</span>
+                <span style='background: #e8f5e9; padding: 8px 16px; border-radius: 20px; color: #388e3c;'>🥗 饮食营养建议</span>
+                <span style='background: #fff3e0; padding: 8px 16px; border-radius: 20px; color: #f57c00;'>💪 动作指导</span>
+                <span style='background: #f3e5f5; padding: 8px 16px; border-radius: 20px; color: #7b1fa2;'>❓ 健身问答</span>
+            </div>
+            <p style='color: #999; margin-top: 5px;'>↓ 在下方输入框开始提问吧～ ↓</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # 处理用户输入
-    if user_input and submit:
+    # 显示聊天历史
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(msg['content'])
+        elif msg["role"] == "assistant":
+            with st.chat_message("assistant", avatar="💪"):
+                st.markdown(msg['content'])
+
+    # 底部输入框
+    if prompt := st.chat_input("有什么健身问题想咨询？"):
         # 添加用户消息
-        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # 显示用户消息
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(prompt)
 
         # AI回复
-        context = ""
-        if st.session_state.user_info:
-            info = st.session_state.user_info
-            context = f"\n\n【用户背景信息供参考】性别：{info['gender']}，年龄：{info['age']}岁，身高：{info['height']}cm，体重：{info['weight']}kg，BMI：{info['bmi']}，目标：{info['goal']}，经验：{info['experience']}\n"
+        with st.chat_message("assistant", avatar="💪"):
+            with st.spinner("教练思考中..."):
+                # 准备上下文
+                context = ""
+                if st.session_state.user_info:
+                    info = st.session_state.user_info
+                    context = f"\n\n【用户背景信息供参考】性别：{info['gender']}，年龄：{info['age']}岁，身高：{info['height']}cm，体重：{info['weight']}kg，BMI：{info['bmi']}，目标：{info['goal']}，经验：{info['experience']}\n"
 
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        messages.extend(st.session_state.messages[1:])  # 跳过原始system消息
+                messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+                # 过滤掉原有的 system 消息，保留其他消息
+                for msg in st.session_state.messages:
+                    if msg["role"] != "system":
+                        messages.append(msg)
 
-        # 在最后一条用户消息后添加上下文
-        messages[-1]["content"] += context
+                # 在最后一条用户消息后添加上下文
+                if messages and messages[-1]["role"] == "user":
+                    messages[-1]["content"] += context
 
-        with st.spinner("教练思考中..."):
-            ai_reply = call_claude_api(messages)
+                ai_reply = call_claude_api(messages)
 
         # 保存AI回复
         st.session_state.messages.append({"role": "assistant", "content": ai_reply})
 
+        # 显示AI回复
+        with st.chat_message("assistant", avatar="💪"):
+            st.markdown(ai_reply)
+
         st.rerun()
-
-    if st.session_state.user_info:
-        info = st.session_state.user_info
-        st.caption(f"当前用户：{info['gender']} | {info['age']}岁 | {info['weight']}kg | 目标：{info['goal']}")
-
-    # 显示聊天历史
-    if st.session_state.messages:
-        st.markdown("---")
-        for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                with st.chat_message("user", avatar="👤"):
-                    st.markdown(msg['content'])
-            elif msg["role"] == "assistant":
-                with st.chat_message("assistant", avatar="💪"):
-                    st.markdown(msg['content'])
 
 # ==================== 页脚 ====================
 st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: center; color: gray; font-size: 0.8em;'>
+    <div class="main-footer">
         💪 AI健身助手问答系统 | 坚持训练，遇见更好的自己<br>
         Designed by liaoxiwen
     </div>
