@@ -123,9 +123,14 @@ with st.sidebar:
     if st.button("💬 咨询教练"):
         st.session_state.page = "chat"
     if st.button("🔄 重置所有"):
+        # 保留页面状态，重置其他数据
+        page_to_keep = st.session_state.page
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.rerun()
+        st.session_state.page = page_to_keep
+        st.session_state.user_info = {}
+        st.session_state.messages = []
+        st.session_state.plan_generated = False
 
     st.markdown("---")
     if st.session_state.user_info:
@@ -164,7 +169,7 @@ def call_claude_api(messages):
             "anthropic-version": "2023-06-01"
         }
 
-        response = requests.post(f"{ANTHROPIC_BASE_URL}/v1/messages", json=payload, headers=headers, timeout=30)
+        response = requests.post(f"{ANTHROPIC_BASE_URL}/v1/messages", json=payload, headers=headers, timeout=60)
         response.raise_for_status()
 
         result = response.json()
@@ -347,7 +352,6 @@ elif st.session_state.page == "plan":
         # 调整计划按钮
         if st.button("🔄 调整计划"):
             st.session_state.page = "chat"
-            st.rerun()
 
 # ========== 页面3: 咨询教练 ==========
 elif st.session_state.page == "chat":
@@ -358,11 +362,9 @@ elif st.session_state.page == "chat":
     with col2:
         if st.button("🗑️ 清空对话", use_container_width=True):
             st.session_state.messages = []
-            st.rerun()
     with col3:
         if st.button("🔄 新对话", use_container_width=True):
             st.session_state.messages = []
-            st.rerun()
 
     # 用户信息卡片
     if st.session_state.user_info:
@@ -393,7 +395,7 @@ elif st.session_state.page == "chat":
     if not st.session_state.messages:
         st.markdown("""
         <div style='text-align: center; padding: 20px;'>
-            <h3>👋 欢迎来到 AI 健身助手</h3>
+            <h3>👋 欢迎咨询健身问题</h3>
             <p style='color: #666;'>我是您的专业健身教练，可以帮您：</p>
             <div style='display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 15px 0;'>
                 <span style='background: #e3f2fd; padding: 8px 16px; border-radius: 20px; color: #1976d2;'>📋 制定训练计划</span>
